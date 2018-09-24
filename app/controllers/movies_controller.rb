@@ -11,9 +11,33 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.all
+    sort = params[:sort] # Tells us which column to sort by
+    
+    if sort == 'title'
+      @movies = Movie.order(title: :asc)
+      @date_class = ''
+      @title_class = 'hilite'
+    elsif sort == 'release_date'
+      @movies = Movie.order(release_date: :asc)
+      @date_class = 'hilite'
+      @title_class = ''
+    else
+      @movies = Movie.all
+      @date_class = ''
+      @title_class = ''
+    end
   end
 
+  def sort
+    sort_by = params[:sort_by] # Tells us which column to sort by
+    
+    if sort_by == 'title'
+      @movies = Movie.order(title: :asc)
+    elsif sort_by == 'release_date'
+      @movies = Movie.order(release_date: :asc)
+    end
+  end
+  
   def new
     # default: render 'new' template
   end
