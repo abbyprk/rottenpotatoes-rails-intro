@@ -11,30 +11,38 @@ class MoviesController < ApplicationController
   end
 
   def index
+    @checked = {}
+    @date_class, @title_class = ''
+    @all_ratings = Movie.get_ratings()
     sort = params[:sort] # Tells us which column to sort by
+    commit = params[:commit]
     
     if sort == 'title'
       @movies = Movie.order(title: :asc)
-      @date_class = ''
       @title_class = 'hilite'
     elsif sort == 'release_date'
       @movies = Movie.order(release_date: :asc)
       @date_class = 'hilite'
-      @title_class = ''
+    elsif commit == 'Refresh'
+      ratings = params[:ratings]
+      @movies = Movie.where(rating: ratings.keys)
+      @selected_ratings = params[:ratings]
+      
+      #check appropriate ratings
+      @all_ratings.each { |rating|
+        if ratings.key?(rating)
+          @checked.store(rating, true)
+        else
+          @checked.store(rating, false)
+        end
+      }
     else
       @movies = Movie.all
-      @date_class = ''
-      @title_class = ''
-    end
-  end
-
-  def sort
-    sort_by = params[:sort_by] # Tells us which column to sort by
     
-    if sort_by == 'title'
-      @movies = Movie.order(title: :asc)
-    elsif sort_by == 'release_date'
-      @movies = Movie.order(release_date: :asc)
+      #initialize the checked variables for when the page loads
+      @all_ratings.each { |rating|
+        @checked.store(rating, true)
+      }
     end
   end
   
