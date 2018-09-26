@@ -12,27 +12,42 @@ class MoviesController < ApplicationController
 
   def index
     @checked = {}
-    @date_class, @title_class = ''
     @all_ratings = Movie.get_ratings()
-    sort = params[:sort] # Tells us which column to sort by
+    sort_by = params[:sort] # Tells us which column to sort by
     commit = params[:commit]
     
-    if sort == 'title'
-      @movies = Movie.order(title: :asc)
-      @title_class = 'hilite'
-      if session[:params]
-        session.delete(:params)
-      end
-      session[:params] = params
-    elsif sort == 'release_date'
-      @movies = Movie.order(release_date: :asc)
-      @date_class = 'hilite'
-      if session[:params]
-        session.delete(:params)
-      end
+    if sort_by == 'title' || sort_by == 'release_date'
+      sort(sort_by)
       session[:params] = params
     elsif commit == 'Refresh' && params[:ratings]
-      ratings = params[:ratings]
+      filter_by_ratings(params[:ratings])
+      session[:params] = params
+    elsif session[:params]
+      flash.keep
+      redirect_to movies_path(:params => session[:params])
+    else
+      @movies = Movie.all
+    
+      #initialize the checked variables for when the page loads without filter params
+      @all_ratings.each { |rating|
+        @checked.store(rating, true)
+      }
+    end
+  end
+  
+  def sort(sort_by)
+    @date_class, @title_class = ''
+    
+    if sort_by == 'title'
+      @movies = Movie.order(title: :asc)
+      @title_class = 'hilite'
+    elsif sort_by == 'release_date'
+      @movies = Movie.order(release_date: :asc)
+      @date_class = 'hilite'
+    end
+  end
+  
+  def filter_by_ratings(ratings) 
       @movies = Movie.where(rating: ratings.keys)
       @selected_ratings = params[:ratings]
       
@@ -44,21 +59,6 @@ class MoviesController < ApplicationController
           @checked.store(rating, false)
         end
       }
-      if session[:params]
-        session.delete(:params)
-      end
-      session[:params] = params
-    elsif session[:params]
-      flash.keep
-      redirect_to movies_path(:params => session[:params])
-    else
-      @movies = Movie.all
-    
-      #initialize the checked variables for when the page loads
-      @all_ratings.each { |rating|
-        @checked.store(rating, true)
-      }
-    end
   end
   
   def new
