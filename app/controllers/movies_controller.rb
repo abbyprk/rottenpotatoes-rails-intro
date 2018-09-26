@@ -20,10 +20,18 @@ class MoviesController < ApplicationController
     if sort == 'title'
       @movies = Movie.order(title: :asc)
       @title_class = 'hilite'
+      if session[:params]
+        session.delete(:params)
+      end
+      session[:params] = params
     elsif sort == 'release_date'
       @movies = Movie.order(release_date: :asc)
       @date_class = 'hilite'
-    elsif commit == 'Refresh'
+      if session[:params]
+        session.delete(:params)
+      end
+      session[:params] = params
+    elsif commit == 'Refresh' && params[:ratings]
       ratings = params[:ratings]
       @movies = Movie.where(rating: ratings.keys)
       @selected_ratings = params[:ratings]
@@ -36,6 +44,14 @@ class MoviesController < ApplicationController
           @checked.store(rating, false)
         end
       }
+      if session[:params]
+        session.delete(:params)
+      end
+      session[:params] = params
+    elsif session[:params]
+      puts session
+      flash.keep
+      redirect_to movies_path(:params => session[:params])
     else
       @movies = Movie.all
     
@@ -44,6 +60,9 @@ class MoviesController < ApplicationController
         @checked.store(rating, true)
       }
     end
+    puts"SESSION INFO params: "
+    puts session[:params]
+    puts "/n/n/n"
   end
   
   def new

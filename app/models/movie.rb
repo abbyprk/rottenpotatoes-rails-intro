@@ -1,7 +1,11 @@
 class Movie < ActiveRecord::Base
     
     def self.get_ratings
-        #TODO: only return the values that we actually have in the db?
-       return ['G','PG','PG-13','R'] 
+        ratings = []
+        result = self.select(:rating).distinct
+        result.each { |row|
+            ratings.push(row['rating'])
+        }
+        return ratings
     end
 end
