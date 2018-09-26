@@ -49,7 +49,6 @@ class MoviesController < ApplicationController
       end
       session[:params] = params
     elsif session[:params]
-      puts session
       flash.keep
       redirect_to movies_path(:params => session[:params])
     else
@@ -60,9 +59,6 @@ class MoviesController < ApplicationController
         @checked.store(rating, true)
       }
     end
-    puts"SESSION INFO params: "
-    puts session[:params]
-    puts "/n/n/n"
   end
   
   def new
