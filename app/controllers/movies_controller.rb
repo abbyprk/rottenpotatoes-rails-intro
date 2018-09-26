@@ -13,18 +13,12 @@ class MoviesController < ApplicationController
   def index
     @checked = {}
     @all_ratings = Movie.get_ratings()
-    sort_by = params[:sort] # Tells us which column to sort by
-    commit = params[:commit]
     
-    if sort_by == 'title' || sort_by == 'release_date'
-      sort(sort_by)
-      session[:params] = params
-    elsif commit == 'Refresh' && params[:ratings]
-      filter_by_ratings(params[:ratings])
-      session[:params] = params
-    elsif session[:params]
-      flash.keep
-      redirect_to movies_path(:params => session[:params])
+    sort_filter = params[:sort] || params[:ratings] ||
+                  (session[:params] && (session[:params].key?("sort") || session[:params].key?("ratings")))
+    
+    if sort_filter
+      sort_and_filter(params)
     else
       @movies = Movie.all
     
@@ -35,25 +29,47 @@ class MoviesController < ApplicationController
     end
   end
   
-  def sort(sort_by)
-    @date_class, @title_class = ''
+  def sort_and_filter(params)
+    session_params = session[:params]
+    redirect = false
     
-    if sort_by == 'title'
-      @movies = Movie.order(title: :asc)
-      @title_class = 'hilite'
-    elsif sort_by == 'release_date'
-      @movies = Movie.order(release_date: :asc)
-      @date_class = 'hilite'
+    # if the params do not contain ratings or sort, then get it from the session params if it exists
+    if !params[:ratings] && session_params && session_params["ratings"]
+      params[:ratings] = session_params["ratings"]
+      redirect = true
+    end
+    if !params[:sort] && session_params && session_params["sort"]
+      params[:sort] = session_params["sort"]
+      redirect = true
+    end
+    
+    #If we added to the params, then redirect with the updated params
+    if redirect
+      flash.keep
+      redirect_to movies_path(:params => params)
+    else
+      @date_class, @title_class = ''
+
+      if params[:sort] == 'title'
+        @movies = params[:ratings] ? Movie.where(rating: params[:ratings].keys).order(title: :asc) : Movie.order(title: :asc)
+        @title_class = 'hilite'
+      elsif params[:sort] == 'release_date'
+        @movies = params[:ratings] ? Movie.where(rating: params[:ratings].keys).order(release_date: :asc) : Movie.order(release_date: :asc)
+        @date_class = 'hilite'
+      elsif params[:ratings]
+        @movies = Movie.where(rating: params[:ratings].keys)
+      else
+        @movies = Movie.all
+      end
+      
+      session[:params] = params
+      set_checked_ratings(params[:ratings])
     end
   end
   
-  def filter_by_ratings(ratings) 
-      @movies = Movie.where(rating: ratings.keys)
-      @selected_ratings = params[:ratings]
-      
-      #check appropriate ratings
-      @all_ratings.each { |rating|
-        if ratings.key?(rating)
+  def set_checked_ratings(ratings)
+    @all_ratings.each { |rating|
+        if !ratings || ratings.key?(rating)
           @checked.store(rating, true)
         else
           @checked.store(rating, false)
