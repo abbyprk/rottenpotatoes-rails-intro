@@ -14,11 +14,11 @@ class MoviesController < ApplicationController
     @all_ratings = Movie.get_ratings() #ask the Movie model for all applicable ratings
     
     #If we updated the params, then redirect
-    if should_redirect()
+    if should_redirect
       flash.keep
       redirect_to movies_path(:params => params)
     else
-      sort_and_filter()
+      sort_and_filter
       @checked = get_checked_ratings(params[:ratings])
     end
   end
@@ -26,7 +26,7 @@ class MoviesController < ApplicationController
   # This method determines if any sorting or filtering criteria exists in the session 
   # that is not included in the query params. If so, it will update the
   # params and tell the caller that a redirect should be done
-  def should_redirect()
+  def should_redirect
     session_params = session[:params]
     redirect = false
     
@@ -45,7 +45,7 @@ class MoviesController < ApplicationController
   
   # This method will sort and/or filter by the criteria in the params
   # If no params are set or the params contain invalid sorting information, it will return all movies
-  def sort_and_filter()
+  def sort_and_filter
       @date_class, @title_class = ''
 
       if params[:sort] == 'title'
