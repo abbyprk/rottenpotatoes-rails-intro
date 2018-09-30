@@ -11,29 +11,26 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @checked = {}
-    @all_ratings = Movie.get_ratings()
+    @all_ratings = Movie.get_ratings() #ask the Movie model for all applicable ratings
     
-    sort_filter = params[:sort] || params[:ratings] ||
-                  (session[:params] && (session[:params].key?("sort") || session[:params].key?("ratings")))
-    
-    if sort_filter
-      sort_and_filter(params)
+    #If we updated the params, then redirect
+    if should_redirect()
+      flash.keep
+      redirect_to movies_path(:params => params)
     else
-      @movies = Movie.all
-    
-      #initialize the checked variables for when the page loads without filter params
-      @all_ratings.each { |rating|
-        @checked.store(rating, true)
-      }
+      sort_and_filter()
+      @checked = get_checked_ratings(params[:ratings])
     end
   end
   
-  def sort_and_filter(params)
+  # This method determines if any sorting or filtering criteria exists in the session 
+  # that is not included in the query params. If so, it will update the
+  # params and tell the caller that a redirect should be done
+  def should_redirect()
     session_params = session[:params]
     redirect = false
     
-    # if the params do not contain ratings or sort, then get it from the session params if it exists
+    # if the params do not contain ratings or sort criteria, then get it from the session params if it exists
     if !params[:ratings] && session_params && session_params["ratings"]
       params[:ratings] = session_params["ratings"]
       redirect = true
@@ -43,11 +40,12 @@ class MoviesController < ApplicationController
       redirect = true
     end
     
-    #If we added to the params, then redirect with the updated params
-    if redirect
-      flash.keep
-      redirect_to movies_path(:params => params)
-    else
+    return redirect
+  end
+  
+  # This method will sort and/or filter by the criteria in the params
+  # If no params are set or the params contain invalid sorting information, it will return all movies
+  def sort_and_filter()
       @date_class, @title_class = ''
 
       if params[:sort] == 'title'
@@ -59,22 +57,25 @@ class MoviesController < ApplicationController
       elsif params[:ratings]
         @movies = Movie.where(rating: params[:ratings].keys)
       else
+        #If an invalid option has somehow been selected or nothing is selected then show all movies
         @movies = Movie.all
       end
       
-      session[:params] = params
-      set_checked_ratings(params[:ratings])
-    end
+      session[:params] = params #Update session params with the latest criteria
   end
   
-  def set_checked_ratings(ratings)
+  # This method returns a hash with all ratings where true indicates 
+  # that the rating has been selected
+  def get_checked_ratings(ratings)
+    checked = {}
     @all_ratings.each { |rating|
         if !ratings || ratings.key?(rating)
-          @checked.store(rating, true)
+          checked.store(rating, true)
         else
-          @checked.store(rating, false)
+          checked.store(rating, false)
         end
       }
+    return checked
   end
   
   def new
